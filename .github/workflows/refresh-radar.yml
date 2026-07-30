@@ -1,0 +1,34 @@
+name: Refresh Opportunity Radar
+
+on:
+  schedule:
+    # 08:30 Asia/Shanghai = 00:30 UTC
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build daily data and site
+        run: node scripts/run-pages.mjs
+      - name: Commit refreshed radar
+        run: |
+          if git diff --quiet -- site docs; then
+            echo "No data change to commit."
+            exit 0
+          fi
+          git config user.name "opportunity-radar-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site docs
+          git commit -m "chore: refresh daily opportunity radar"
+          git push
